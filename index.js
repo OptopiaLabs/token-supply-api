@@ -94,6 +94,7 @@ function formatSupplyResponse(timestamp, data, timeRangeType, tokenomicsData) {
       ecosystemFund: data[COLUMNS.ECOSYSTEM],
       community: data[COLUMNS.COMMUNITY],
     },
+    csv: 'https://github.com/OptopiaLabs/token-supply-api/blob/main/tokenomics.csv',
   };
 }
 
