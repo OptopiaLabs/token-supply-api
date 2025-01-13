@@ -186,6 +186,12 @@ app.get('/circulatingSupply', (req, res) => {
   res.json(supply.circulatingSupply);
 });
 
+app.get('/totalSupply', (req, res) => {
+  const timestamp = req.query.timestamp || new Date().getTime();
+  const supply = calculateSupply(timestamp);
+  res.json(supply.maxSupply);
+});
+
 app.get('/maxSupply', (req, res) => {
   const timestamp = req.query.timestamp || new Date().getTime();
   const supply = calculateSupply(timestamp);
