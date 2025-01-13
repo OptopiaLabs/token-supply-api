@@ -174,7 +174,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
   const timestamp = req.query.timestamp || new Date().getTime();
   const supply = calculateSupply(timestamp);
   res.json(supply);
