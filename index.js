@@ -180,6 +180,18 @@ app.get('*', (req, res) => {
   res.json(supply);
 });
 
+app.get('/circulatingSupply', (req, res) => {
+  const timestamp = req.query.timestamp || new Date().getTime();
+  const supply = calculateSupply(timestamp);
+  res.json(supply.circulatingSupply);
+});
+
+app.get('/maxSupply', (req, res) => {
+  const timestamp = req.query.timestamp || new Date().getTime();
+  const supply = calculateSupply(timestamp);
+  res.json(supply.maxSupply);
+});
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
