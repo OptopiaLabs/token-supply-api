@@ -262,16 +262,40 @@ app.get('/circulatingSupply', async (req, res) => {
   res.json(supply.circulatingSupply);
 });
 
+app.get('/circulatingSupply/json', async (req, res) => {
+  const timestamp = req.query.timestamp || new Date().getTime();
+  const supply = await calculateSupply(timestamp);
+  res.json({
+    result: supply.circulatingSupply,
+  });
+});
+
 app.get('/totalSupply', async (req, res) => {
   const timestamp = req.query.timestamp || new Date().getTime();
   const supply = await calculateSupply(timestamp);
   res.json(supply.totalSupply);
 });
 
+app.get('/totalSupply/json', async (req, res) => {
+  const timestamp = req.query.timestamp || new Date().getTime();
+  const supply = await calculateSupply(timestamp);
+  res.json({
+    result: supply.totalSupply,
+  });
+});
+
 app.get('/maxSupply', async (req, res) => {
   const timestamp = req.query.timestamp || new Date().getTime();
   const supply = await calculateSupply(timestamp);
   res.json(supply.maxSupply);
+});
+
+app.get('/maxSupply/json', async (req, res) => {
+  const timestamp = req.query.timestamp || new Date().getTime();
+  const supply = await calculateSupply(timestamp);
+  res.json({
+    result: supply.maxSupply,
+  });
 });
 
 app.listen(port, () => {
