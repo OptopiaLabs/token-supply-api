@@ -2,9 +2,23 @@ const express = require('express');
 const csv = require('csv-parser');
 const fs = require('fs');
 const moment = require('moment');
+const { Web3 } = require('web3');
 
 const app = express();
 const port = 3000;
+
+const RPC = 'https://eth.llamarpc.com';
+const web3 = new Web3(RPC);
+
+const DAO_Addresses = [
+  '0xEA17d4033979c2cc7Fd74B609138260E3012334B', //Community
+  '0xfff94E46e276518516861D471B1042897586A42F', //Marketing
+  '0x63083e0e4B363f94421c7d7e13147732E1b7090C', //Token Sale
+  '0xE00fc877F8ec233b905C6A38823945Cfd09fBE8B', //Ecosystem
+  '0xC4fC8Ad2224c891704377Dd96638714e0D74CAeE', //Booster Event
+];
+
+const TOKEN_ADDRESS = '0xf8e57ac2730d3088d98b79209739b0d5ba085a03';
 
 // CSV column name mappings
 const COLUMNS = {
@@ -37,6 +51,58 @@ fs.createReadStream('tokenomics.csv')
     });
     tokenomicsData.push(processedRow);
   });
+
+let daoReserveCache = {
+  value: null,
+  timestamp: 0,
+};
+
+async function daoReserveSupply() {
+  const now = Date.now();
+  // Check if cache is still valid (less than 1 minute old)
+  if (
+    daoReserveCache.value !== null &&
+    now - daoReserveCache.timestamp < 60000
+  ) {
+    return daoReserveCache.value;
+  }
+
+  try {
+    const contract = new web3.eth.Contract(erc20ABI, TOKEN_ADDRESS);
+    let totalReserve = 0n;
+
+    for (const address of DAO_Addresses) {
+      const balance = await contract.methods.balanceOf(address).call();
+      totalReserve += BigInt(balance);
+    }
+
+    const result = Number(totalReserve / 10n ** 18n);
+
+    // Update cache
+    daoReserveCache = {
+      value: result,
+      timestamp: now,
+    };
+
+    return result;
+  } catch (error) {
+    // If error occurs and we have cached value, return it
+    if (daoReserveCache.value !== null) {
+      return daoReserveCache.value;
+    }
+    throw error;
+  }
+}
+
+const erc20ABI = [
+  {
+    constant: true,
+    inputs: [{ name: '_owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: 'balance', type: 'uint256' }],
+    type: 'function',
+  },
+];
 
 function formatTimeRange(timestamp, type, tokenomicsData) {
   const currentDate = moment(timestamp).format('YYYY/MM/DD');
@@ -75,14 +141,24 @@ function formatTimeRange(timestamp, type, tokenomicsData) {
   }
 }
 
-function formatSupplyResponse(timestamp, data, timeRangeType, tokenomicsData) {
+async function formatSupplyResponse(
+  timestamp,
+  data,
+  timeRangeType,
+  tokenomicsData
+) {
+  let totalSupply = data[COLUMNS.TOTAL];
+  let daoReserve = await daoReserveSupply();
+  let circulatingSupply = totalSupply > 0 ? totalSupply - daoReserve : 0;
   return {
     timestamp,
     timeRange: formatTimeRange(timestamp, timeRangeType, tokenomicsData),
     maxSupply: tokenomicsData[tokenomicsData.length - 1][COLUMNS.TOTAL],
-    circulatingSupply: data[COLUMNS.TOTAL],
+    totalSupply: totalSupply,
+    circulatingSupply: circulatingSupply,
+    daoReserveSupply: daoReserve,
     circulatingPercent:
-      data[COLUMNS.TOTAL] /
+      circulatingSupply /
       tokenomicsData[tokenomicsData.length - 1][COLUMNS.TOTAL],
     categorySupply: {
       boosterEvent: data[COLUMNS.BOOSTER],
@@ -98,7 +174,7 @@ function formatSupplyResponse(timestamp, data, timeRangeType, tokenomicsData) {
   };
 }
 
-function calculateSupply(timestamp) {
+async function calculateSupply(timestamp) {
   const currentDate = moment(timestamp);
   if (!currentDate.isValid()) {
     throw new Error('Invalid timestamp format. Please use ISO 8601 format.');
@@ -174,27 +250,27 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
   const timestamp = req.query.timestamp || new Date().getTime();
-  const supply = calculateSupply(timestamp);
+  const supply = await calculateSupply(timestamp);
   res.json(supply);
 });
 
-app.get('/circulatingSupply', (req, res) => {
+app.get('/circulatingSupply', async (req, res) => {
   const timestamp = req.query.timestamp || new Date().getTime();
-  const supply = calculateSupply(timestamp);
+  const supply = await calculateSupply(timestamp);
   res.json(supply.circulatingSupply);
 });
 
-app.get('/totalSupply', (req, res) => {
+app.get('/totalSupply', async (req, res) => {
   const timestamp = req.query.timestamp || new Date().getTime();
-  const supply = calculateSupply(timestamp);
-  res.json(supply.maxSupply);
+  const supply = await calculateSupply(timestamp);
+  res.json(supply.totalSupply);
 });
 
-app.get('/maxSupply', (req, res) => {
+app.get('/maxSupply', async (req, res) => {
   const timestamp = req.query.timestamp || new Date().getTime();
-  const supply = calculateSupply(timestamp);
+  const supply = await calculateSupply(timestamp);
   res.json(supply.maxSupply);
 });
 
