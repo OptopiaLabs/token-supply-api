@@ -148,7 +148,7 @@ async function formatSupplyResponse(
 ) {
   let totalSupply = data[COLUMNS.TOTAL];
   let daoReserve = await daoReserveSupply();
-  let circulatingSupply = totalSupply > 0 ? totalSupply - daoReserve : 0;
+  let circulatingSupply = totalSupply;
   return {
     timestamp,
     timeRange: formatTimeRange(timestamp, timeRangeType, tokenomicsData),
