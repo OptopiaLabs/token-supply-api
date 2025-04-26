@@ -147,7 +147,7 @@ async function formatSupplyResponse(
   tokenomicsData
 ) {
   let totalSupply = data[COLUMNS.TOTAL];
-  let daoReserve = await daoReserveSupply();
+  // let daoReserve = await daoReserveSupply();
   let circulatingSupply = totalSupply;
   return {
     timestamp,
