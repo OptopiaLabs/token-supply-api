@@ -155,7 +155,7 @@ async function formatSupplyResponse(
     maxSupply: tokenomicsData[tokenomicsData.length - 1][COLUMNS.TOTAL],
     totalSupply: totalSupply,
     circulatingSupply: circulatingSupply,
-    daoReserveSupply: daoReserve,
+    // daoReserveSupply: daoReserve,
     circulatingPercent:
       circulatingSupply /
       tokenomicsData[tokenomicsData.length - 1][COLUMNS.TOTAL],
